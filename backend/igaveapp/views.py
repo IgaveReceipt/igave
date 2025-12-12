@@ -1,9 +1,21 @@
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 from .models import Receipt
 from .serializers import UserSerializer, ReceiptSerializer
+
+from rest_framework.permissions import AllowAny
+
+import json
+
+
+
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -12,13 +24,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AllowAny]
 
-    @action(detail=False, methods=['get'])
-    def me(self, request):
-        """Get current user information."""
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+    
 
 
 class ReceiptViewSet(viewsets.ModelViewSet):
@@ -44,9 +52,22 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def get_users(request):
-    users = User.objects.all().values("id", "username", "password", "date_joined", "is_staff")
-    return JsonResponse(list(users), safe=False)
+    users = User.objects.all()
+
+    data = []
+    for u in users:
+        data.append({
+            "id": u.id,
+            "username": u.username,
+            "password": u.password,
+            "date_joined": u.date_joined.strftime("%Y-%m-%d %H:%M:%S"),
+            "is_staff": u.is_staff,
+        })
+
+    return JsonResponse(data, safe=False)
+
 
 @csrf_exempt
 def delete_user(request, id):
