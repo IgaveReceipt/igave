@@ -3,20 +3,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
+from django.conf import settings
 from .models import Receipt
 from .serializers import UserSerializer, ReceiptSerializer
-
-from rest_framework.permissions import AllowAny
-
-import json
-
-
-
-
+from .ocr import extract_receipt_data
+import os
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -43,75 +34,40 @@ class ReceiptViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Set the user to the current user when creating a receipt."""
         serializer.save(user=self.request.user)
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def get_users(request):
-    users = User.objects.all()
-
-    data = []
-    for u in users:
-        data.append({
-            "id": u.id,
-            "username": u.username,
-            "password": u.password,
-            "date_joined": u.date_joined.strftime("%Y-%m-%d %H:%M:%S"),
-            "is_staff": u.is_staff,
-        })
-
-    return JsonResponse(data, safe=False)
+    @action(detail=False, methods=['post'])
+    def scan(self, request):
+        """
+        Receives an image, saves it temporarily, scans it with Mindee, 
+        and returns the data (Vendor, Date, Total).
+        """
+        uploaded_file = request.FILES.get('file')
+        
+        if not uploaded_file:
+            return Response(
+                {"error": "No file uploaded. Please send a 'file' key."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
-@csrf_exempt
-def delete_user(request, id):
-    if request.method == "DELETE":
+        temp_dir = os.path.join(settings.BASE_DIR, 'tmp_uploads')
+        os.makedirs(temp_dir, exist_ok=True)
+        full_path = os.path.join(temp_dir, uploaded_file.name)
+
+        with open(full_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+
         try:
-            user = User.objects.get(id=id)
-            user.delete()
-            return JsonResponse({"message": "User deleted"}, status=200)
-        except User.DoesNotExist:
-            return JsonResponse({"error": "User not found"}, status=404)
+            data = extract_receipt_data(full_path)
+            if not data:
+                return Response(
+                    {"error": "OCR failed to read the document."}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
-@csrf_exempt
-def register_user(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST required"}, status=400)
+            return Response(data)
 
-    data = json.loads(request.body)
-
-    username = data.get("username")
-    password = data.get("password")
-
-    if User.objects.filter(username=username).exists():
-        return JsonResponse({"error": "User already exists"}, status=400)
-
-    user = User.objects.create_user(username=username, password=password)
-    return JsonResponse({"success": True, "message": "User created"})
-    
-
-@csrf_exempt
-def login_user(request):
-    if request.method == "POST":
-        data = json.loads(request.body.decode("utf-8"))
-        username = data.get("username")
-        password = data.get("password")
-
-        user = authenticate(request, username=username, password=password)
-
-        if user is not None:
-            return JsonResponse({
-                "success": True,
-                "message": "Login successful",
-                "username": user.username,
-                "is_staff": user.is_staff,
-            })
-        else:
-            return JsonResponse({"success": False, "error": "Invalid credentials"}, status=400)
-
+        finally:
+            if os.path.exists(full_path):
+                os.remove(full_path)
