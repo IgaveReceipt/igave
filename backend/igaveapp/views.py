@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from django.contrib.auth.models import User
@@ -24,6 +24,3 @@ class ReceiptViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Receipt.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
