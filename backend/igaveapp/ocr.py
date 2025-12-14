@@ -1,9 +1,12 @@
 # backend/igaveapp/ocr.py
 import os
+
 from dotenv import load_dotenv
-from mindee import ClientV2, PathInput, InferenceParameters
+from mindee import ClientV2, InferenceParameters, PathInput
+
 
 load_dotenv()
+
 
 def extract_receipt_data(file_path):
     """
@@ -17,26 +20,24 @@ def extract_receipt_data(file_path):
         return None
 
     try:
-        # 1. Init Client (The V2 way that worked for you)
+        # 1. Init Client
         client = ClientV2(api_key)
-        
-        # 2. Set Parameters
+
+        # 2. Set parameters
         params = InferenceParameters(model_id=model_id)
-        
+
         # 3. Process the file
         input_source = PathInput(file_path)
         print(f"🚀 Scanning {file_path}...")
-        
+
         response = client.enqueue_and_get_inference(
-            input_source, 
-            params
+            input_source,
+            params,
         )
-        
-        # 4. Extract Fields (Using the logic that finally worked!)
-        # We access the .result.fields dictionary directly
+
+        # 4. Extract fields
         fields = response.inference.result.fields
-        
-        # Helper to safely get values
+
         def get_value(field_name):
             field = fields.get(field_name)
             return field.value if field else None
@@ -45,12 +46,11 @@ def extract_receipt_data(file_path):
             "vendor": get_value("supplier_name"),
             "date": get_value("date"),
             "total": get_value("total_amount"),
-            "category": get_value("category")
+            "category": get_value("category"),
         }
-        
+
         return data
 
-    except Exception as e:
-        print(f"❌ Mindee Exception: {e}")
+    except Exception as exc:
+        print(f"❌ Mindee Exception: {exc}")
         return None
-
