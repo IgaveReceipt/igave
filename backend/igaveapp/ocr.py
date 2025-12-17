@@ -2,25 +2,41 @@
 import os
 import io
 import re 
+import json
+from google.oauth2 import service_account
 from google.cloud import vision
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CREDENTIALS_PATH = os.path.join(BASE_DIR, "google_credentials.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CREDENTIALS_PATH
 
 def extract_receipt_data(file_path):
     """
     Scans a receipt using Google Cloud Vision API and 'guesses' the data.
     """
-
-    if not os.path.exists(CREDENTIALS_PATH):
-        print(f"❌ Error: Google Key not found at {CREDENTIALS_PATH}")
-        return None
+    client = None
 
     try:
         # 2. START THE CLIENT 🤖
-        client = vision.ImageAnnotatorClient()
+        google_json_str = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+
+        if google_json_str:
+            # Option A: Found the secure variable (Production/Local Secure)
+            creds_dict = json.loads(google_json_str)
+            credentials = service_account.Credentials.from_service_account_info(creds_dict)
+            client = vision.ImageAnnotatorClient(credentials=credentials)
+        else:
+            # 2. FALLBACK: Check for local file (Development only)
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            creds_path = os.path.join(base_dir, "google_credentials.json")
+            
+            if os.path.exists(creds_path):
+                print(f"📂 Loading Google Credentials from file: {creds_path}")
+                client = vision.ImageAnnotatorClient.from_service_account_json(creds_path)
+            else:
+                print("❌ CRITICAL ERROR: No Google Credentials found.")
+                print("   -> Checked Env Var: GOOGLE_CREDENTIALS_JSON")
+                print(f"   -> Checked File: {creds_path}")
+                return None
 
         # 3. LOAD THE IMAGE 📸
         with io.open(file_path, 'rb') as image_file:
@@ -39,7 +55,6 @@ def extract_receipt_data(file_path):
 
         # The first element [0] is the entire text blob
         full_text = texts[0].description
-        print(f"📝 Raw Text Found:\n{full_text}\n{'-'*20}")
 
         # 5. PARSE THE DATA (THE HARD PART) 🕵️‍♂️
         # Since Google doesn't know what a 'Total' is, we have to find it ourselves.
@@ -76,10 +91,20 @@ def parse_vendor(texts):
 
 def parse_date(text):
     """
-    Regex to find dates like 12/05/2025, 2025-05-12, or Dec 05, 2025.
+    Regex to find dates.
+    Now supports:
+    1. Numeric: 12/05/2025, 2025-05-12
+    2. Text:    Dec 05, 2025, 12 October 2023
     """
-    # Regex for MM/DD/YYYY or DD/MM/YYYY or YYYY-MM-DD
-    date_pattern = r'\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}[/-]\d{1,2}[/-]\d{1,2})\b'
+    # 1. Numeric Pattern (MM/DD/YYYY or YYYY-MM-DD)
+    numeric_pattern = r'\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}[/-]\d{1,2}[/-]\d{1,2})\b'
+    match = re.search(numeric_pattern, text)
+    if match:
+        return match.group(0)
+
+    # 2. Text Pattern (Month Names)
+    # Looks for: "Dec 05 2023" OR "05 Dec 2023" OR "December 5, 2023"
+    text_pattern = r'(?i)\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,.-]+\d{1,2}[\s,.-]+\d{2,4}|\d{1,2}[\s,.-]+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,.-]+\d{2,4})\b'
     match = re.search(date_pattern, text)
     if match:
         return match.group(0)
