@@ -2,7 +2,10 @@
 
 import ThemeToggle from "./ThemeToggle";
 
-export default function AuthLayout({ children }) {
+import { ReactNode } from "react";
+
+export default function AuthLayout({ children }: { children: ReactNode }) {
+
   return (
     <div className="min-h-screen flex items-center justify-center 
       bg-gradient-to-br from-purple-500 via-purple-400 to-pink-500 
