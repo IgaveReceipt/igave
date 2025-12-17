@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { login } from "../services/api";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -12,23 +13,17 @@ export default function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setMessage("");
 
-    const res = await fetch("http://127.0.0.1:8000/api/login/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const data = await login({ username, password });
 
-    const data = await res.json();
-
-    if (res.ok) {
       localStorage.setItem("username", data.username);
-        localStorage.setItem("is_staff", data.is_staff);
+      localStorage.setItem("is_staff", String(data.is_staff));
 
-  router.push(`/dashboard?user=${username}`);
-
-    } else {
-      setMessage(data.error || "Login failed");
+      router.push(`/dashboard?user=${username}`);
+    } catch (error: any) {
+      setMessage(error.message || "Login failed");
     }
   };
 
@@ -45,7 +40,6 @@ export default function LoginForm() {
             type="text"
             className="w-full mt-1 px-4 py-2 rounded-xl bg-white/20 text-white placeholder-white/60
             border border-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            placeholder="Enter username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -58,7 +52,6 @@ export default function LoginForm() {
             type="password"
             className="w-full mt-1 px-4 py-2 rounded-xl bg-white/20 text-white placeholder-white/60
             border border-white/30 focus:outline-none focus:ring-2 focus:ring-pink-300"
-            placeholder="Enter password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -75,11 +68,7 @@ export default function LoginForm() {
       </form>
 
       {message && (
-        <p
-          className={`mt-4 text-center font-medium ${
-            message.includes("successful") ? "text-green-300" : "text-red-300"
-          }`}
-        >
+        <p className="mt-4 text-center font-medium text-red-300">
           {message}
         </p>
       )}
