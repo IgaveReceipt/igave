@@ -10,8 +10,7 @@ export default function RegisterForm() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleRegister = async () => {
 
     const res = await fetch("http://127.0.0.1:8000/api/register/", {
       method: "POST",
