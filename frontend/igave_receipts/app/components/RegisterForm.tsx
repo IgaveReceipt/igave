@@ -88,11 +88,15 @@ export default function RegisterForm() {
 
       {/* Link to login */}
       <p className="text-center text-white/70 mt-6">
-        Already have an account?{" "}
-        <a href="/login" className="text-white underline hover:text-pink-200">
-          Login
-        </a>
-      </p>
+  Already have an account?
+  <a
+    href="/register"
+    className="ml-1 text-white underline hover:text-pink-200"
+  >
+    Register
+  </a>
+</p>
+
     </div>
   );
 }
