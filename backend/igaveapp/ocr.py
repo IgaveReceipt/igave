@@ -2,6 +2,7 @@ import os
 import io
 import re
 import json
+from datetime import datetime # <--- 1. NEW IMPORT
 from google.oauth2.service_account import Credentials
 from google.cloud import vision
 
@@ -71,7 +72,10 @@ def extract_receipt_data(file_path):
     }
 
     # Regex Patterns
-    date_pattern = r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\.\d{1,2}\.\d{2,4}|\d{4}-\d{2}-\d{2})'
+    
+    # --- 2. UPDATED DATE PATTERN (Bilingual: Math & English) ---
+    date_pattern = r'(?i)(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}-\d{2}-\d{2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s.,-]+\d{1,2}[a-z]{0,2}[\s.,-]+\d{2,4}|\d{1,2}[\s.,-]+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s.,-]+\d{2,4})'
+    
     total_pattern = r'(?i)(total|amount|balance|due|grand total)\s*[:$]?\s*(\d+[.,]\d{2})'
     
     # NEW: Item Pattern (Text followed by a price at the end of the line)
@@ -80,10 +84,36 @@ def extract_receipt_data(file_path):
     # Words to ignore when looking for items
     blacklist_words = ["total", "subtotal", "tax", "vat", "change", "cash", "due", "balance", "visa", "mastercard", "date"]
 
-    # --- A. EXECUTE DATE SEARCH ---
+    # --- A. EXECUTE DATE SEARCH (Smart & Standardized) 📅 ---
     date_matches = re.findall(date_pattern, full_text)
+    
     if date_matches:
-        data['date'] = date_matches[0]
+        raw_date = date_matches[0]
+        # Clean up the string (remove weird spaces or suffixes like "th")
+        clean_date = re.sub(r'(st|nd|rd|th|,)', '', raw_date).strip()
+        
+        # The Translator: Try to understand the format
+        formats_to_try = [
+            "%m/%d/%Y", "%m-%d-%Y", "%m.%d.%Y",   # 12/25/2023
+            "%Y-%m-%d",                           # 2023-12-25
+            "%b %d %Y", "%B %d %Y",               # Dec 25 2023
+            "%d %b %Y", "%d %B %Y",               # 25 Dec 2023
+            "%m/%d/%y", "%m-%d-%y"                # 12/25/23 (Short year)
+        ]
+        
+        for fmt in formats_to_try:
+            try:
+                # Try to convert to YYYY-MM-DD
+                dt_obj = datetime.strptime(clean_date, fmt)
+                data['date'] = dt_obj.strftime("%Y-%m-%d")
+                print(f" Date Fixed: {raw_date} -> {data['date']}")
+                break
+            except ValueError:
+                continue
+        
+        # Fallback: If translation fails, just save the raw string
+        if not data['date']:
+            data['date'] = raw_date
 
     # --- B. EXECUTE VENDOR SEARCH ---
     ignored_vendor_words = ["welcome", "receipt", "copy", "customer", "transaction", "original", "date"]
