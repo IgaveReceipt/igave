@@ -72,8 +72,9 @@ def extract_receipt_data(file_path):
     # Words to ignore when looking for ITEMS
     blacklist_words = ["total", "subtotal", "tax", "vat", "due", "balance", "date"] + payment_blacklist
 
-    # --- A. EXECUTE DATE SEARCH ---
+    # --- A. EXECUTE DATE SEARCH (Smart & Standardized) 📅 ---
     date_matches = re.findall(date_pattern, full_text)
+    
     if date_matches:
         raw_date = date_matches[0]
         clean_date = re.sub(r'(st|nd|rd|th|,)', '', raw_date).strip()
