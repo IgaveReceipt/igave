@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link"; 
 import DashboardLayout from "../components/DashboardLayout";
 import VerifyReceiptForm from "../components/VerifyReceiptForm";
 import RecordsList, { ReceiptItem } from "../components/RecordsList";
-import { scanReceipt, exportCSV, deleteReceipt, apiGet } from "../services/api"; // <--- Import deleteReceipt
+import StatsComponent from "../components/StatsComponent"; 
+import ThemeToggle from "../components/ThemeToggle"; // <--- 1. IMPORT
+import { scanReceipt, exportCSV, deleteReceipt, apiGet } from "../services/api"; 
 import { ReceiptData } from "../types";
 
 export default function DashboardPage() {
-  // ... (keep existing state) ...
   const [username, setUsername] = useState("");
   const [history, setHistory] = useState<ReceiptItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -34,7 +36,6 @@ export default function DashboardPage() {
     }
   };
 
-  // ... (keep handleFileChange) ...
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -51,29 +52,24 @@ export default function DashboardPage() {
       }
     };
 
-
-  // ... (keep toggleSelection) ...
   const toggleSelection = (id: number) => {
       setSelectedIds(prev => 
         prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
       );
     };
 
-  // --- NEW: Handle Delete ---
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this receipt?")) return;
 
     try {
       await deleteReceipt(id);
-      // Remove from UI instantly
       setHistory(prev => prev.filter(item => item.id !== id));
-      setSelectedIds(prev => prev.filter(sid => sid !== id)); // Deselect if selected
+      setSelectedIds(prev => prev.filter(sid => sid !== id)); 
     } catch (error) {
       alert("Failed to delete receipt.");
     }
   };
 
-  // ... (keep handleExport) ...
    const handleExport = async () => {
       if (selectedIds.length === 0) {
         alert("Please select at least one receipt to export.");
@@ -98,7 +94,7 @@ export default function DashboardPage() {
       }
     };
 
-  // ... (keep Render logic) ...
+  // --- Render Logic ---
   if (draftReceipt) {
       return (
         <DashboardLayout>
@@ -107,7 +103,7 @@ export default function DashboardPage() {
             onCancel={() => setDraftReceipt(null)}
             onSuccess={() => {
               setDraftReceipt(null);
-              fetchHistory(); // Refresh list after saving
+              fetchHistory(); 
               alert("Saved!");
             }}
           />
@@ -117,6 +113,9 @@ export default function DashboardPage() {
   
     return (
       <DashboardLayout>
+        {/* 2. ADD TOGGLE HERE (It floats, so position in JSX doesn't matter much) */}
+        <ThemeToggle />
+
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold">Welcome, {username} 👋</h1>
@@ -158,15 +157,39 @@ export default function DashboardPage() {
         </div>
   
         {scanError && <div className="text-red-400 mb-4">{scanError}</div>}
+
+        <StatsComponent />
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+          <Link href="/today" className="bg-white/5 border border-white/10 p-3 rounded-xl text-center hover:bg-white/20 transition">
+            <span className="block text-xl">🔥</span>
+            <span className="text-sm font-bold text-white">Today</span>
+          </Link>
+          <Link href="/day" className="bg-white/5 border border-white/10 p-3 rounded-xl text-center hover:bg-white/20 transition">
+            <span className="block text-xl">📅</span>
+            <span className="text-sm font-bold text-white">Day</span>
+          </Link>
+          <Link href="/month" className="bg-white/5 border border-white/10 p-3 rounded-xl text-center hover:bg-white/20 transition">
+            <span className="block text-xl">🗓️</span>
+            <span className="text-sm font-bold text-white">Month</span>
+          </Link>
+          <Link href="/year" className="bg-white/5 border border-white/10 p-3 rounded-xl text-center hover:bg-white/20 transition">
+            <span className="block text-xl">📆</span>
+            <span className="text-sm font-bold text-white">Year</span>
+          </Link>
+          <Link href="/period" className="bg-white/5 border border-white/10 p-3 rounded-xl text-center hover:bg-white/20 transition">
+            <span className="block text-xl">⏳</span>
+            <span className="text-sm font-bold text-white">Period</span>
+          </Link>
+        </div>
   
-        {/* THE LIST (Pass handleDelete) */}
         <RecordsList 
           items={history} 
           selectedIds={selectedIds} 
           onToggle={toggleSelection}
-          onDelete={handleDelete} // <--- Pass it here
+          onDelete={handleDelete} 
         />
   
       </DashboardLayout>
     );
-  }
+}
