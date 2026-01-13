@@ -1,4 +1,4 @@
-# Igave
+# Isave
 
 Igave is a modern receipt scanning and management system designed to help customers organize their expenses efficiently. The application features a robust Django backend and a dynamic Next.js frontend.
 
@@ -16,11 +16,11 @@ The project is organized into two main directories:
 ```
 Igave/
 ├── backend/            # Django API and business logic
-│   ├── igave/          # Project configuration (settings, urls)
-│   ├── igaveapp/       # Main application (models, views, migrations)
+│   ├── isave/          # Project configuration (settings, urls)
+│   ├── isaveapp/       # Main application (models, views, migrations)
 │   └── manage.py       # Django management script
 ├── frontend/           # Next.js User Interface
-│   └── igave_receipts/ # Next.js application source
+│   └── isave_receipts/ # Next.js application source
 └── requirements.txt    # Python dependencies
 ```
 
@@ -58,7 +58,7 @@ The backend API will be available at `http://localhost:8000`.
 Navigate to the frontend directory and install dependencies.
 
 ```bash
-cd frontend/igave_receipts
+cd frontend/isave_receipts
 
 # Install Node modules
 npm install
@@ -87,7 +87,7 @@ flake8
 
 ### Frontend Tests
 ```bash
-cd frontend/igave_receipts
+cd frontend/isave_receipts
 
 # Build for production
 npm run build
