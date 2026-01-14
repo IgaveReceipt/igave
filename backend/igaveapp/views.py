@@ -186,7 +186,6 @@ class ReceiptViewSet(viewsets.ModelViewSet):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="iSave_Report.csv"'
 
-        # 🪄 MAGIC TRICK: Write a BOM (Byte Order Mark) so Excel opens it comfortably
         response.write(u'\ufeff'.encode('utf8'))
 
         writer = csv.writer(response)
@@ -208,7 +207,6 @@ class ReceiptViewSet(viewsets.ModelViewSet):
         receipts = queryset.order_by('-date')
         
         for r in receipts:
-            # 2. CLEANER DATA (No commas = No ugly quotes)
             
             # Date: "24 Nov 2025" (Removed the comma!)
             formatted_date = r.date.strftime("%d %b %Y") if r.date else "N/A"
