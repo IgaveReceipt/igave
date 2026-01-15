@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import RecordsList from "../components/RecordsList";
-import { apiGet } from "../services/api";
+import RecordsList from "../../components/RecordsList";
+import { apiGet } from "../../services/api";
 
 type ApiResponse = { results?: any[] } | any[];
 
