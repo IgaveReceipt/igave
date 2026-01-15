@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import RecordsList from "../../components/RecordsList";
 import { apiGet } from "../../services/api";
+import StatsComponent from "../../components/StatsComponent";
+
 
 type ApiResponse = { results?: any[] } | any[];
 
@@ -36,29 +38,35 @@ export default function MonthPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-10">
-      <div className="max-w-4xl mx-auto bg-white/10 border border-white/20 rounded-2xl p-8 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <h1 className="text-3xl font-bold text-white">Month</h1>
-          <div className="flex items-center gap-2">
-            <input
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="rounded-lg px-3 py-2 bg-white/20 text-white border border-white/30"
-            />
-            <button
-              onClick={() => load(month)}
-              className="px-4 py-2 rounded-lg bg-white/30 hover:bg-white/40 text-white border border-white/20"
-            >
-              Load
-            </button>
-          </div>
-        </div>
+  <>
+    <div className="flex items-center justify-between gap-4 mb-6">
+      <h1 className="text-3xl font-bold text-white">Month</h1>
 
-        {error && <div className="text-red-200 mb-4">{error}</div>}
-        <RecordsList items={items} />
+      <div className="flex items-center gap-2">
+        <input
+          type="month"
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          className="rounded-lg px-3 py-2 bg-white/20 text-white border border-white/30"
+        />
+        <button
+          onClick={() => load(month)}
+          className="px-4 py-2 rounded-lg bg-white/30 hover:bg-white/40 text-white border border-white/20"
+        >
+          Load
+        </button>
       </div>
     </div>
-  );
+
+    {/* ✅ Stats окремо, на повну ширину */}
+    <StatsComponent query={`month=${month}`} />
+
+    {error && <div className="text-red-200 mb-4">{error}</div>}
+
+    {/* optionally: section for a list */}
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+      <RecordsList items={items} />
+    </div>
+  </>
+);
 }

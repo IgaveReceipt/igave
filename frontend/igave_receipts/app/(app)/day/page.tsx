@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import RecordsList from "../../components/RecordsList";
 import { apiGet } from "../../services/api";
+import StatsComponent from "../../components/StatsComponent";
+
 
 type ApiResponse = { results?: any[] } | any[];
 
@@ -40,6 +42,9 @@ export default function DayPage() {
     <>
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold text-white">Day</h1>
+
+        <StatsComponent query={`date=${date}`} />
+
 
         <div className="flex items-center gap-2">
           <input
